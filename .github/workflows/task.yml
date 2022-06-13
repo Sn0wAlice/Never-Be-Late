@@ -1,0 +1,55 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Never Be Late
+
+on:
+  schedule:
+  - cron: "0 * * * *"
+  push:
+    branches:
+    - main
+
+jobs:
+  executeMe:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        deno-version: [1.4.0]
+
+    steps:
+      - uses: linhbn123/rebase-pull-requests@v1.0.1
+      # Git Clone the repro to the container
+      - uses: actions/checkout@v2
+
+      # Clean Zone
+      - name: Cleaning files - all
+        run: rm -r ./Tor/
+
+      # Getting All Tor Ip List
+      - name: Get Tor Ip
+        run: git clone https://github.com/SecOps-Institute/Tor-IP-Addresses ./Tor/
+        
+        
+      # Keep intresting files
+      - name: Cleaning files - .git
+        run: rm -r ./Tor/.git
+      - name: Cleaning files - .github
+        run: rm -r ./Tor/.github
+      - name: Cleaning files - README.md
+        run: rm -r ./Tor/README.md
+      
+      # Now execute the deno script
+      - name: Use Deno Version ${{ matrix.deno-version }}
+        uses: denolib/setup-deno@v2
+        with:
+          deno-version: ${{ matrix.deno-version }}
+      - name: Executing "Update project readme"
+        run: deno run -A --unstable --no-check ./script/getWebinfo.ts
+        
+      
+      # Push the new repro
+      - uses: mikeal/publish-to-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: 'main' 
